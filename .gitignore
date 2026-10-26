@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# C compilation
+*.exe
+*.o
+*.obj
+*.pdb
+
+# Build output
+build/
+
+# Vivado generated files
+.Xil/
+*.jou
+*.log
+*.cache/
+*.runs/
+*.sim/
+*.gen/
+*.hw/
