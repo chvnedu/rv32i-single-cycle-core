@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #include "cpu.h"
 
 void cpu_reset(CPU *cpu) {
@@ -44,18 +43,18 @@ bool execute_op(CPU *cpu, INSTRUCTION instruction) {
             }
             break;
         case 0x4:
-            if(instruction.funct7 == 0x0) {
+            if(instruction.funct3 == 0x0) {
                 wdata = alu_xor(rdata1, rdata2);
             } else {
-                printf("Invalid Instruction: %#X \n", instruction.inst);
+                printf("Invalid gnstruction: %#X \n", instruction.inst);
                 return false;
             }
             break;
         case 0x6:    
-            if(instruction.funct7 == 0x0) {
+            if(instruction.funct3 == 0x0) {
                 wdata = alu_or(rdata1, rdata2);
             } else {
-                printf("Invalid Instruction: %#X \n", instruction.inst);
+                printf("Invalid gnstruction: %#X \n", instruction.inst);
                 return false;
             }
             break;
@@ -105,3 +104,22 @@ bool execute_instruction(CPU *cpu, uint32_t instruction) {
     }
 }
 
+bool cpu_step(CPU *cpu, InstructionMemory *im) {
+    uint32_t instruction;
+    if (cpu == NULL) {
+        return false;
+    }
+    bool fetch_success = instruction_fetch(im, cpu->pc, &instruction);
+    if (fetch_success) {
+        bool execute_success = execute_instruction(cpu, instruction);
+        if(execute_success){
+            return true;
+        } else {
+            printf("Failure to Execute Instruction\n");
+            return false;
+        }
+    } else {
+        printf("Failure to Fetch Instruction\n");
+        return false;
+    }
+}

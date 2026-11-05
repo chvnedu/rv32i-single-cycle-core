@@ -3,32 +3,24 @@
 #include "cpu.h"
 #include "decode.h"
 #include "alu.h"
+#include "memory.h"
 
 int main(){
     CPU cpu;
     cpu_reset(&cpu);
-    reg_write(&cpu, 1, 10);
-    uint32_t instruction = 0xFFC08193;
-    execute_instruction(&cpu, instruction);
-    printf("addi x3, x1, -4 \nx3: %" PRIu32 "\nPC: %" PRIu32 "\n", reg_read(&cpu, 3), cpu.pc);
-    reg_write(&cpu, 1, 20);
-    reg_write(&cpu, 2, 7);
-    instruction = 0x002081B3;
-    execute_instruction(&cpu, instruction);
-    printf("addi x3, x1, x2 \nx3: %" PRIu32 "\nPC: %" PRIu32 "\n", reg_read(&cpu, 3), cpu.pc);
+    InstructionMemory memory = {0};
+    memory.inst[0] = 0x00A00093;
+    memory.inst[1] = 0x01400113;
+    memory.inst[2] = 0x002081B3;
 
-    reg_write(&cpu, 1, 9); // 1001
-    reg_write(&cpu, 2, 5); // 0101
-    instruction = 0x0020f1b3;
-    execute_instruction(&cpu, instruction);
-    printf("and x3, x1, x2 \nx3: %" PRIu32 "\nPC: %" PRIu32 "\n", reg_read(&cpu, 3), cpu.pc);
 
-    instruction = 0x0020e1b3;
-    execute_instruction(&cpu, instruction);
-    printf("or x3, x1, x2 \nx3: %" PRIu32 "\nPC: %" PRIu32 "\n", reg_read(&cpu, 3), cpu.pc);
-
-    instruction = 0x0020c1b3;
-    execute_instruction(&cpu, instruction);
-    printf("xor x3, x1, x2 \nx3: %" PRIu32 "\nPC: %" PRIu32 "\n", reg_read(&cpu, 3), cpu.pc);
-
+    for (int i = 0; i <3; i++) {
+    if (cpu_step(&cpu, &memory)) {
+        printf("Result %d: %" PRIu32"\n", i+1, reg_read(&cpu, i+1));
+        }else {
+            printf("CPU Step Failed");
+            break;
+        }    
+    }
+    printf("Final PC: %" PRIu32 "\n", cpu.pc);
 }

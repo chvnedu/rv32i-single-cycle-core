@@ -6,6 +6,7 @@
 
 #include "decode.h"
 #include "alu.h"
+#include "memory.h"
 
 typedef struct {
     uint32_t pc;
@@ -25,5 +26,5 @@ void pc_increment(CPU *cpu);
 bool execute_instruction(CPU *cpu, uint32_t instruction);
 bool execute_op(CPU *cpu, INSTRUCTION instruction);
 bool execute_op_imm(CPU *cpu, INSTRUCTION instruction);
-
+bool cpu_step(CPU *cpu, InstructionMemory *im);
 #endif
