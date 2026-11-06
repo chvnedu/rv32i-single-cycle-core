@@ -43,7 +43,7 @@ bool execute_op(CPU *cpu, INSTRUCTION instruction) {
             }
             break;
         case 0x4:
-            if(instruction.funct3 == 0x0) {
+            if(instruction.funct7 == 0x0) {
                 wdata = alu_xor(rdata1, rdata2);
             } else {
                 printf("Invalid gnstruction: %#X \n", instruction.inst);
@@ -51,7 +51,7 @@ bool execute_op(CPU *cpu, INSTRUCTION instruction) {
             }
             break;
         case 0x6:    
-            if(instruction.funct3 == 0x0) {
+            if(instruction.funct7 == 0x0) {
                 wdata = alu_or(rdata1, rdata2);
             } else {
                 printf("Invalid gnstruction: %#X \n", instruction.inst);
