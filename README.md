@@ -1,111 +1,118 @@
 RV32I Single-Cycle Processor
-A RISC-V processor development project progressing from a C reference model to a single-cycle Verilog implementation targeting the Digilent Basys3 FPGA.
-Status: In development. The C reference model supports a subset of RV32I arithmetic and logical instructions. Instruction fetching, memory operations, control flow, RTL design, and FPGA validation are planned or in progress as indicated below.
+C reference model → Verilog RTL → functional verification → synthesis → FPGA
 
-Overview
-This project explores how a processor executes instructions at both the software-model and register-transfer levels. The first phase builds a C reference model for RV32I instruction decoding, register-file behavior, ALU operations, and program-counter management. The next phase implements a single-cycle processor in Verilog, with simulation and FPGA validation against the reference model.
-The long-term goal is a reproducible hardware design with clear architectural documentation and instruction-level verification—not just a collection of HDL modules.
-Project objectives
-- Implement the RV32I base integer instruction set in a C reference model.
-- Design a single-cycle RV32I datapath and control unit in Verilog.
-- Verify instruction execution through focused tests and comparison with the C model.
-- Simulate and synthesize the hardware design using AMD Vivado.
-- Target the Digilent Basys3 FPGA for a final hardware demonstration.
+An educational processor-design project exploring how 32-bit RISC-V instructions move from architectural behavior in C to synthesizable digital hardware. The goal is to build a single-cycle RV32I processor, verify its execution against a C reference model, examine synthesis and timing results, and eventually demonstrate it on a Digilent Basys3 FPGA.
+Status (November 19, 2026): In development. The C model executes a six-instruction subset with instruction fetch and directed regression tests. The Verilog program counter and ALU are implemented and have been simulated independently. The integrated RTL processor is not yet complete, and full RV32I compliance is not claimed.
+
 Current implementation
-The C reference model currently includes:
-- CPU state: 32 general-purpose registers and a program counter.
-- Register file: Reads from x0 return zero; writes to x0 are ignored.
-- Instruction decoding: Extraction of opcode, register indices, function fields, and 12-bit I-type immediates.
-- Immediate handling: 12-bit sign extension.
-- ALU: Addition, subtraction, XOR, OR, and AND operations.
-- Execution: Dispatch for supported OP and OP-IMM encodings; register writeback and sequential PC + 4 updates.
-- Error reporting: Unsupported instruction encodings return a failure status rather than updating architectural state.
-Implemented instruction subset
-Instruction	Format	Status
-ADD	R-type	Implemented
-SUB	R-type	Implemented
-XOR	R-type	Implemented; regression testing pending
-OR	R-type	Implemented; regression testing pending
-AND	R-type	Implemented; regression testing pending
-ADDI	I-type	Implemented
+Component	C reference model	Verilog RTL
+Program counter	Implemented (PC + 4)	Implemented; simulated
+Register file	32 × 32-bit registers; x0 protected	In progress locally; not yet committed/verified
+Instruction decoding	OP and OP-IMM field extraction	Planned
+ALU	ADD, SUB, AND, OR, XOR	Implemented; directed self-checking testbench
+I-type immediate	12-bit sign extension	Planned
+Instruction memory/fetch	Implemented with alignment and bounds checks	Planned
+Instruction execution	Decode, execute, writeback, sequential PC update	Not yet integrated
+Loads/stores, branches, jumps	Not implemented	Not implemented
+Synthesis, timing, FPGA demonstration	Not applicable	Pending
 
 
-Scope note: This is not yet a complete RV32I simulator or a completed Verilog core. Instruction fetch, data memory, branches, jumps, remaining instructions, and automated verification are still to come.
-Architecture and organization
-Planned repository layout (folders are added as their contents are developed):
+Supported instructions in the C model
+Instruction	Encoding format	C model	Integrated RTL CPU
+ADD	R-type	Implemented; directed test	Pending
+SUB	R-type	Implemented; directed test	Pending
+AND	R-type	Implemented; directed test	Pending
+OR	R-type	Implemented; directed test	Pending
+XOR	R-type	Implemented; directed test	Pending
+ADDI	I-type	Implemented; directed test	Pending
+
+
+The C implementation uses x0 = 0, sign-extends 12-bit immediates, rejects unsupported instruction encodings, and advances the PC by four bytes for supported instructions. Branches, jumps, loads, and stores are outside the current execution subset.
+Repository structure
 rv32i-single-cycle-core/
-├── README.md           # Project overview and setup
-├── c_model/            # C reference CPU, decoder, and ALU
-├── rtl/                # Verilog processor modules (planned)
-├── tb/                 # HDL testbenches (planned)
-├── tests/              # Assembly programs and expected results (planned)
-├── docs/               # Architecture notes and engineering log
-└── fpga/               # Basys3 integration files (planned)
-Current C-model execution flow:
-32-bit instruction
-       |
-       v
-     decode()
-       |
-       v
- execute_instruction()
-       |
-       +--> OP     (register-register)
-       |       |
-       |       v
-       |    execute_op()
-       |
-       +--> OP-IMM (register-immediate)
-               |
-               v
-         execute_op_imm()
-               |
-               v
-      ALU result / writeback
-               |
-               v
-       sequential PC update
-At present, test code supplies the encoded instruction directly to execute_instruction(). The next milestone is to fetch instructions from memory using the PC.
-Build the C model
-Requirements: A C11-compatible compiler such as GCC.
-From the repository root, if source files are in c_model/:
-gcc -Wall -Wextra -std=c11 c_model/main.c c_model/cpu.c c_model/decode.c c_model/alu.c -o riscvsim
-Run on Linux/macOS or an MSYS2 shell:
+├── c_model/        # C CPU state, decode, ALU, and instruction memory
+├── rtl/            # Verilog modules (currently PC and ALU on main)
+├── tb/             # Individual RTL simulation testbenches
+├── tests/          # C instruction regression tests
+├── .gitignore
+└── README.md
+Additional modules and integration tests will be committed as they are implemented and verified.
+Build and run the C reference model
+Requirement: GCC or another C11-compatible compiler. From the repository root:
+gcc -std=c11 -Wall -Wextra -I c_model \
+  c_model/main.c c_model/cpu.c c_model/decode.c \
+  c_model/alu.c c_model/memory.c -o riscvsim
 ./riscvsim
-On Windows, the output may be named riscvsim.exe and can be run in PowerShell with:
-.\riscvsim.exe
-If the source layout or build procedure changes, update these commands accordingly.
-Testing and verification
-Current manual tests have exercised arithmetic instruction execution and program-counter behavior. The verification plan is to create repeatable tests for:
-- Register-file invariants (x0, valid register indices).
-- Correct immediate sign extension, including negative values.
-- ALU operations and register writeback.
-- Invalid encodings that must not modify CPU state.
-- Instruction fetch, branches, loads, and stores as those features are added.
-- Comparison of C reference outcomes with Verilog simulation results.
-Test results and coverage claims will be documented as tests are added; passing all RV32I instructions is not claimed at this stage.
+The included demonstration loads three encoded instructions into instruction memory:
+addi x1, x0, 10
+addi x2, x0, 20
+add  x3, x1, x2
+Expected architectural state after three successful steps:
+x1 = 10
+x2 = 20
+x3 = 30
+PC = 12
+On Windows, the output may be riscvsim.exe (for example, run ./riscvsim.exe in MSYS2).
+Run the C regression tests
+gcc -std=c11 -Wall -Wextra -I c_model \
+  tests/test_cpu.c c_model/cpu.c c_model/decode.c \
+  c_model/alu.c c_model/memory.c -o test_cpu
+./test_cpu
+tests/test_cpu.c contains six directed instruction tests for ADDI, ADD, SUB, AND, OR, and XOR. Each test uses assertions to check instruction success, the destination register value, and a four-byte PC increment. These are directed tests, not exhaustive RV32I coverage.
+RTL design and simulation
+The current RTL sources are:
+- rtl/pc.v — 32-bit sequential program counter with synchronous reset and PC + 4 behavior.
+- rtl/alu.v — combinational 32-bit ADD, SUB, AND, OR, and XOR, selected by a 3-bit control signal.
+The testbenches are:
+- tb/tb_pc.v — reset and increment simulation stimulus; automatic assertions are still to be added.
+- tb/tb_alu.v — directed result comparisons including arithmetic wraparound and an unsupported control value.
+These files can be added to an AMD Vivado simulation project and run with tb_pc or tb_alu selected as the simulation top. Individual module simulations are not evidence that a complete CPU works.
+Planned single-cycle execution path
+Instruction address (PC)
+          |
+          v
+  Instruction memory
+          |
+          v
+   Decode + control ------> Register file reads
+                                  |
+                       Immediate / operand select
+                                  |
+                                  v
+                                 ALU
+                                  |
+                                  v
+                           Register writeback
+
+              PC advances to next instruction
+This illustrates the initial arithmetic-instruction subset, not the full RV32I datapath. Branch/jump selection and load/store data paths will be added later.
+Verification strategy
+1. Verify each RTL module independently using directed and edge-case testbenches.
+2. Integrate the datapath, then execute the same three-instruction program as the C model.
+3. Compare register and PC results against expected architectural state.
+4. Expand to more instructions and add C-versus-RTL checking.
+5. Run lint, synthesis, and timing analysis; record the actual results rather than claiming them in advance.
 Roadmap
-- [x] CPU state, reset, and register-file access
-- [x] Program counter and sequential increment
-- [x] Basic instruction decoding and sign extension
-- [x] Core ALU arithmetic/logic functions
-- [x] Instruction execution dispatch and shared writeback
-- [ ] Instruction memory, fetch, and cpu_step()
-- [ ] Data memory, loads, and stores
-- [ ] Branches, jumps, and remaining RV32I operations
-- [ ] Automated C-model regression tests
-- [ ] Single-cycle Verilog datapath and control
-- [ ] RTL testbenches and comparison against the C model
-- [ ] Vivado synthesis and Basys3 FPGA validation
-Design notes
-The C reference model is intentionally modular:
-- decode interprets instruction fields without directly changing CPU state.
-- alu provides arithmetic and logical operations on operand values.
-- cpu manages architectural state, instruction dispatch, and register writeback.
-This separation is intended to make expected behavior easier to test before implementing corresponding hardware modules.
+- [x] C CPU/register model and sequential PC behavior
+- [x] C decode, immediate sign extension, and five ALU operations
+- [x] C instruction memory/fetch and cpu_step()
+- [x] Six directed C instruction regression tests
+- [x] Verilog program counter and simulation stimulus
+- [x] Verilog ALU and directed self-checking testbench
+- [ ] Complete and verify Verilog register file (x0, reset, read/write behavior)
+- [ ] Instruction decoder, immediate generator, and control unit
+- [ ] RTL instruction memory
+- [ ] Integrated single-cycle CPU supporting ADDI, ADD, and SUB
+- [ ] Self-checking CPU integration testbench
+- [ ] Expand ALU/CPU instruction coverage and edge-case tests
+- [ ] Lint, synthesis, timing constraints, and timing/resource reports
+- [ ] Basys3 FPGA demonstration
+- [ ] Extend toward the remaining RV32I instruction formats
+Near-term target: A working, self-checking, integrated RTL instruction subset. Additional instructions, FPGA deployment, and ASIC-oriented analysis follow after the first processor-level test passes.
+Engineering focus
+This project is intended to develop practical skills in RTL design, CPU datapaths, architectural modeling, functional verification, debug, synthesis, and static timing analysis. Work and results are added incrementally with testable commits.
 References
 - RISC-V Unprivileged ISA Specification
-- RISC-V Instruction Encodings
-- Berkeley CS61C Datapath Notes
-Project status
-Independent educational and portfolio project. The implementation, tests, and documentation will evolve as development continues.
+- RISC-V ISA Manual repository
+- UC Berkeley CS61C — Great Ideas in Computer Architecture
+Note: This is an independent learning and portfolio project. Unless specifically reported in a future update, the design has not been synthesized, timing-closed, or demonstrated on an FPGA.
